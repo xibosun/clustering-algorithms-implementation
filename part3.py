@@ -1,27 +1,33 @@
 from sklearn.cluster import KMeans
 import numpy as np
 from numpy import linalg as LA
-import math
 import sys
 
 def TCut_for_bipartite_graph(B, Nseg, maxKmIters=100, cntReps=3):
     Nx, Ny = B.shape
-
+    # print(Nx, Ny)
     if Ny < Nseg:
         sys.exit("Not enough columns!")
     dx = B.sum(axis=1)
 
+    # print(dx.shape)
     if not np.any(dx):
         dx.fill(1e-10)
-    Dx = np.diag(1.0/dx)
-    print(Dx.shape) # should be Nx*Nx
+    helpmat = np.squeeze(np.asarray(1.0/dx))
+    # print(helpmat.shape)
+    Dx = np.diag(helpmat)
+    # print(Dx.shape) # should be Nx*Nx
 
     Wy = np.matmul(np.matmul(B.transpose(), Dx), B)
 
+    # print(Wy.shape)
     ### Computer NCut eigenvectors
     # normalized affinity matrix
     d = Wy.sum(axis=1)
-    D = np.diag(1.0/math.sqrt(d))
+    # print(d.shape)
+    helpmat2 = np.squeeze(np.asarray(1.0/np.sqrt(d)))
+    D = np.diag(helpmat2)
+    # print(D.shape)
     nWy = np.matmul(np.matmul(D, Wy), D)
     nWy = (nWy + nWy.transpose())/2
 
@@ -37,6 +43,11 @@ def TCut_for_bipartite_graph(B, Nseg, maxKmIters=100, cntReps=3):
     bottom = np.sqrt(bottom0.sum(axis=1)) + 1e-10
 
     evec = evec / bottom
-    kmeans = KMeans(n_clusters=Nseg, max_iter=maxKmIters, n_iter=cntReps).fit(evec)
+    kmeans = KMeans(n_clusters=Nseg, max_iter=maxKmIters, n_init=cntReps).fit(evec)
 
-    return kmeans
+    return kmeans.labels_
+
+
+B = np.matrix([[1, 2, 2, 3], [2, 5, 0, 0], [1, 8, 3, 8], [3, 1, 2, 2], [3, 1, 0, 1]])
+labels = TCut_for_bipartite_graph(B, 2)
+print(labels)
