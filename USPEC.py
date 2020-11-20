@@ -1,4 +1,4 @@
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, MiniBatchKMeans
 import numpy as np
 from numpy import linalg as LA
 from scipy.sparse import csr_matrix
@@ -6,6 +6,7 @@ from scipy.io import loadmat, savemat
 import math
 import random
 import sys
+import time
 np.set_printoptions(threshold=sys.maxsize)
 
 
@@ -15,12 +16,22 @@ def USPEC(fea, Ks, distance = 'euclidean', p=1000, Knn=5, maxTcutKmIters=100, cn
     if p > N:
         p = N
     # print warning: off message
+
+    start = time.time()
     RpFea = getRepresentitivesByHibridSelection(fea, p)
+    end = time.time()
+    print('time for getRpFea: ', end - start)
+
     cntRepCls = math.floor(math.sqrt(p))
+
+    start = time.time()
     if (distance == 'euclidean'):
         repClsLabel, repClsCenters = litekmeans(RpFea, cntRepCls, MaxIter=20)
     else:
         repClsLabel, repClsCenters = litekmeans(RpFea, cntRepCls, MaxIter=20)
+    end = time.time()
+    print('time for find center of cluster: ', end - start)
+
     centerDist = pdist2_fast(fea, repClsCenters, distance);
     # Find the nearest rep-cluster (in RpFea) for each object
     minCenterIdxs = np.argmin(centerDist, axis=1)  # one dim
@@ -29,9 +40,10 @@ def USPEC(fea, Ks, distance = 'euclidean', p=1000, Knn=5, maxTcutKmIters=100, cn
     cntRepCls = repClsCenters.shape[0]
     # print(cntRepCls)
 
+    start = time.time()
     # Then find the nearest representative in the nearest rep-cluster for each object.
     nearestRepInRpFeaIdx = np.zeros((N, 1), dtype=np.int64)  # here is 2 dim
-
+    
     for i in range(cntRepCls):
         # cluster is from 0 to 9 including 9, in matlab 1:10 including 10
         # calculate the min index from fea which is nearest to cluster i to all rep in cluster i
@@ -54,26 +66,34 @@ def USPEC(fea, Ks, distance = 'euclidean', p=1000, Knn=5, maxTcutKmIters=100, cn
         nearestRepInRpFeaIdx[np.where(minCenterIdxs == i)] = tmp[0][nearestRepInRpFeaIdx[np.where(minCenterIdxs == i)]]
     # print(nearestRepInRpFeaIdx)
     # the result is 2 dim
+    end = time.time()
+    print('find the nearest representative in the nearest rep-cluster for each object: ', end - start)
 
     # For each object, compute its distance to the candidate neighborhood of its nearest representative not need to be
     # in one cluster(in RpFea)
     neighSize = 10 * Knn  # The candidate neighborhood size. K' = knn*10
     RpFeaW = pdist2_fast(RpFea, RpFea, distance)  # distance matrix
     RpFeaKnnIdx = np.argsort(RpFeaW, axis=1)  # too long may
+
+    start = time.time()
     RpFeaKnnIdx = RpFeaKnnIdx[:, 0:neighSize + 1]  # (p,K'+1)
     # same method to nearestRepInRpFeaIdx
     RpFeaKnnDist = np.zeros((N, RpFeaKnnIdx.shape[1]))  # entry_i to K' distances and nearest rc
+    
     for i in range(p):
         # print(fea[np.where(nearestRepInRpFeaIdx==i)[0],:].shape)
         RpFeaKnnDist[np.where(nearestRepInRpFeaIdx == i), :] = pdist2_fast(
             fea[np.where(nearestRepInRpFeaIdx == i)[0], :], RpFea[RpFeaKnnIdx[i, :], :], distance)
+    
     # get full matrix for each entry with K' nearest reps in indices form
     # select rows based on nearestRepInRpFeaIdx to create N * K' matrix
     RpFeaKnnIdxFull = RpFeaKnnIdx[np.squeeze(nearestRepInRpFeaIdx, axis=1),
                       :]  # entry index corresponding to RpFeaKnnDist
-
     # print(RpFeaKnnIdxFull)
+    end = time.time()
+    print('compute its distance to the candidate neighborhood of its nearest representative (in RpFea): ', end - start)
 
+    start = time.time()
     knnDist = np.zeros((N, Knn))
     knnTmpIdx = np.zeros((N, Knn), dtype=np.int64)
     knnIdx = np.zeros((N, Knn), dtype=np.int64)
@@ -85,10 +105,12 @@ def USPEC(fea, Ks, distance = 'euclidean', p=1000, Knn=5, maxTcutKmIters=100, cn
         knnIdx[:, i] = RpFeaKnnIdxFull[
             rowIdx, knnTmpIdx[:, i]]  # mapping the index to rep cluster index which is nearest to the entry
     # print(knnIdx)
+    end = time.time()
+    print('Get the final KNN according to the candidate neighborhood: ', end - start)
 
-    #line 93
     ## Compute the cross-affinity matrix B for the bipartite graph
 
+    start = time.time()
     if distance == 'euclidean':
         knnMeanDiff = knnDist.mean(axis=None)
         Gsdx = np.exp(-np.square(knnDist**2)/(2*knnMeanDiff**2))
@@ -100,6 +122,8 @@ def USPEC(fea, Ks, distance = 'euclidean', p=1000, Knn=5, maxTcutKmIters=100, cn
     #TODO: extend to Ks as an array
     labels = np.zeros(shape=(N, 1))
     labels[:, 0] = TCut_for_bipartite_graph(B, Ks, maxTcutKmIters, cntTcutKmReps)
+    end = time.time()
+    print('Compute the cross-affinity matrix B for the bipartite graph: ', end - start)
     return labels
 
 
@@ -165,11 +189,13 @@ def getRepresentitivesByHibridSelection(fea, pSize, cntTimes=10):
     if bigPSize > N:
         bigPSize = N
 
-    idx = random.sample(list(range(N)), bigPSize)
-    selected_fea = fea[idx]
-    random_fea = np.array(selected_fea)
+    #idx = random.sample(list(range(N)), bigPSize)
+    #selected_fea = fea[idx]
+    #random_fea = np.array(selected_fea)
+    random_fea = fea[np.random.choice(N, size=bigPSize)]
 
-    kmeans = KMeans(n_clusters=pSize).fit(random_fea)
+    kmeans = MiniBatchKMeans(n_clusters=pSize, max_iter=10, tol=1, init='random').fit(random_fea)
+    
     return kmeans.cluster_centers_
 
 
@@ -219,7 +245,7 @@ def TCut_for_bipartite_graph(B, Nseg, maxKmIters=100, cntReps=3):
     bottom = np.sqrt(bottom0.sum(axis=1)) + 1e-10
 
     evec = evec.multiply(np.power(bottom, -1))
-    kmeans = KMeans(n_clusters=Nseg, max_iter=maxKmIters, n_init=cntReps).fit(evec)
+    kmeans = KMeans(n_clusters=Nseg, max_iter=maxKmIters, n_init=cntReps, init='random').fit(evec)
 
     return kmeans.labels_
 
@@ -228,7 +254,9 @@ data = loadmat('./USPEC/MATLAB_source_code/data_TB1M.mat')
 fea = data['fea']
 gt = data['gt']
 
+start = time.time()
 labels = USPEC(fea, 2)
+end = time.time()
 
 savemat('output/output_TB1M.mat', {'label': labels})
-print(labels)
+print('total time: ', end - start)
