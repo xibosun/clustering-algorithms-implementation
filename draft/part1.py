@@ -18,5 +18,5 @@ def getRepresentitivesByHibridSelection(fea, pSize, cntTimes = 10):
 
 
 B = np.array([[1, 2, 2, 3], [2, 5, 0, 0], [1, 8, 3, 8], [3, 1, 2, 2], [3, 1, 0, 1]])
-repres = getRepresentitivesByHibridSelection(B, 2)
-print(repres)
+RpFea = getRepresentitivesByHibridSelection(B, 2)
+print(RpFea)
