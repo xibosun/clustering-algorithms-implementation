@@ -224,7 +224,7 @@ def TCut_for_bipartite_graph(B, Nseg, maxKmIters=100, cntReps=3):
     # normalized affinity matrix
     d = Wy.sum(axis=1)
     # print(d.shape)
-    helpmat2 = np.squeeze(np.asarray(1.0/np.sqrt(d)))
+    helpmat2 = np.squeeze(np.asarray(1.0 / (np.sqrt(d) + 1e-10)))
     #D = np.zeros(shape=(Ny, Ny))
     #np.fill_diagonal(D, helpmat2)
     D = csr_matrix((helpmat2, (list(range(helpmat2.shape[0])), list(range(helpmat2.shape[0])))), shape=(Ny, Ny))
@@ -250,7 +250,7 @@ def TCut_for_bipartite_graph(B, Nseg, maxKmIters=100, cntReps=3):
     return kmeans.labels_
 
 
-data = loadmat('./USPEC/MATLAB_source_code/data_TB1M.mat')
+data = loadmat(f'./USPEC/MATLAB_source_code/data_{sys.argv[1]}.mat')
 fea = data['fea']
 gt = data['gt']
 
@@ -258,5 +258,5 @@ start = time.time()
 labels = USPEC(fea, 2)
 end = time.time()
 
-savemat('output/output_TB1M.mat', {'label': labels})
+savemat(f'output/output_{sys.argv[1]}.mat', {'label': labels})
 print('total time: ', end - start)
