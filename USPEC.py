@@ -252,7 +252,7 @@ def TCut_for_bipartite_graph(B, Nseg, maxKmIters=100, cntReps=3):
 
 data = loadmat(f'./USPEC/MATLAB_source_code/data_{sys.argv[1]}.mat')
 fea = data['fea']
-fea = fea.astype(np.int)
+fea = fea.astype(np.float)
 gt = data['gt']
 
 start = time.time()
