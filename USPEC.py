@@ -113,7 +113,7 @@ def USPEC(fea, Ks, distance = 'euclidean', p=1000, Knn=5, maxTcutKmIters=100, cn
     start = time.time()
     if distance == 'euclidean':
         knnMeanDiff = knnDist.mean(axis=None)
-        Gsdx = np.exp(-np.square(knnDist**2)/(2*knnMeanDiff**2))
+        Gsdx = np.exp(-np.square(knnDist)/(2*knnMeanDiff**2))
 
     Gsdx[Gsdx==0]= np.finfo(float).eps
     Gidx = np.arange(N).reshape(N,1)+np.zeros(Knn)
@@ -235,7 +235,7 @@ def TCut_for_bipartite_graph(B, Nseg, maxKmIters=100, cntReps=3):
 
     # computer eigenvectors
     eval, evec = LA.eig(nWy.toarray())
-    idx = (-eval).argsort()[1:Nseg]
+    idx = (-eval).argsort()[0:Nseg]
     Ncut_evec = D.dot(evec[:, idx])
 
     ### computer the Ncut eigenvectors on the entire bipartite graph (transfer!)
@@ -250,14 +250,13 @@ def TCut_for_bipartite_graph(B, Nseg, maxKmIters=100, cntReps=3):
     return kmeans.labels_
 
 
-data = loadmat(f'./USPEC/MATLAB_source_code/data_{sys.argv[1]}.mat')
-fea = data['fea']
-fea = fea.astype(np.float)
-gt = data['gt']
+data = loadmat(f'./datasets/data_{sys.argv[1]}.mat')
+fea = data['fea'].astype(np.float)
+gt = data['gt'].astype(np.int8)
 
 start = time.time()
-labels = USPEC(fea, 2)
+labels = USPEC(fea, np.unique(gt).shape[0])
 end = time.time()
 
-savemat(f'output/output_{sys.argv[1]}.mat', {'label': labels})
+savemat(f'results/output_{sys.argv[1]}.mat', {'label': labels})
 print('total time: ', end - start)
