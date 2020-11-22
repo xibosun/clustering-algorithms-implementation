@@ -128,7 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# large dataset
-/USPEC/MATLAB_source_code/data_CG10M.mat
-/USPEC/MATLAB_source_code/data_Flower20M.mat
-/output/output_Flower20M.mat
+# datasets
+/datasets/data_*.mat
+/USPEC/MATLAB_source_code/data_*.mat
+/output/output_*.mat
