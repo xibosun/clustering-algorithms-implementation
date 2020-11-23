@@ -2,7 +2,25 @@
 
 # Datasets
 
-All datasets and results can be downloaded [here](https://www.dropbox.com/sh/fzbcjf7sb4zesjx/AABApeN8sryYH1eRtkBIUjZMa?dl=0)
+All datasets and results can be downloaded [here](https://www.dropbox.com/sh/fzbcjf7sb4zesjx/AABApeN8sryYH1eRtkBIUjZMa?dl=0). Please put all datasets to `./datasets/`. The output will be save in `./outputs/`. The name of datasets are `data_<dataset-name>.mat` and the name of the outputs are `output_<dataset-name>.mat`
+
+# Compile and Run
+
+USPEC.py is also the only source file. We can run the code by the following commands, 
+
+```zsh
+python3 USPEC.py <dataset-name>
+```
+
+For example,
+
+```zsh
+python3 USPEC.py Letters
+```
+
+It will generate an output file `output_Letters.mat` in `./outputs/`.
+
+The code is tested on a Linux system.
 
 # Reference
 

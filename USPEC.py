@@ -258,5 +258,5 @@ start = time.time()
 labels = USPEC(fea, np.unique(gt).shape[0])
 end = time.time()
 
-savemat(f'results/output_{sys.argv[1]}.mat', {'label': labels})
+savemat(f'outputs/output_{sys.argv[1]}.mat', {'label': labels})
 print('total time: ', end - start)

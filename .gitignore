@@ -131,4 +131,4 @@ dmypy.json
 # datasets
 /datasets/data_*.mat
 /USPEC/MATLAB_source_code/data_*.mat
-/output/output_*.mat
+/outputs/output_*.mat
